@@ -1,0 +1,14 @@
+<resources>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+
+    <!--自定义的滑动的circleview  内部item的缺省宽度-->
+    <dimen name="defaultItemWidth">50dp</dimen>
+    <dimen name="defaultItemHeight">50dp</dimen>
+    <dimen name="redCircleWidth">40dp</dimen>
+    <dimen name="redCircleHeight">40dp</dimen>
+    <dimen name="defaultTextSize">10sp</dimen>
+    <dimen name="scrollLeft">50dp</dimen>
+</resources>

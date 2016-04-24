@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--自定义的滑动的circleview-->
+    <declare-styleable name="ScrollCircleView">
+        <!--内部的item的个数-->
+        <attr name="itemNum" format="integer" />
+        <!--内部的item的背景颜色-->
+        <attr name="itemBg" format="color" />
+        <!--内部的item的字体大小-->
+        <attr name="itemTextSize" format="dimension" />
+        <!--内部的item的宽度-->
+        <attr name="itemWidth" format="dimension" />
+
+        <!--内部的item的高度-->
+        <attr name="itemHeight" format="dimension" />
+        <!--自定义view距左侧的距离-->
+        <attr name="scrollLeft" format="dimension"/>
+    </declare-styleable>
+
+</resources>
