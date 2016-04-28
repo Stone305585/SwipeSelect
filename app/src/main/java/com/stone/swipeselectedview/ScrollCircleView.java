@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,7 +15,10 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.OverScroller;
 import android.widget.TextView;
+
+import java.lang.reflect.Field;
 
 /**
  * 自定义滑动弹性的view
@@ -22,6 +26,12 @@ import android.widget.TextView;
  */
 public class ScrollCircleView extends FrameLayout {
     private Context context;
+
+    public void setItemNum(int itemNum) {
+        this.itemNum = itemNum;
+        initItemView();
+    }
+
     //内部个数
     private int itemNum;
     //内部字体大小
@@ -56,6 +66,9 @@ public class ScrollCircleView extends FrameLayout {
     //当前应该变成红色的textView;
     private TextView tv;
 
+    //左右两个空置textview的宽度
+    private int textWidth = 0;
+
 
     public ScrollCircleView(Context context) {
         this(context, null);
@@ -85,7 +98,7 @@ public class ScrollCircleView extends FrameLayout {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         //该控件的宽度
         width = MeasureSpec.getSize(widthMeasureSpec);
-        hscrollX = (width % itemWidth) / 2;//hscroll两侧分别偏移一半
+        hscrollX = (width - itemWidth) / 2;//hscroll两侧分别偏移一半
         //onMeasure会走多次，不要再这里添加view
         //initItemView();
         LL.setPadding(hscrollX, 0, hscrollX, 0);
@@ -100,24 +113,20 @@ public class ScrollCircleView extends FrameLayout {
 
         //定义内部每一个子textView
         ViewGroup.LayoutParams textParams = new ViewGroup.LayoutParams(itemWidth, ViewGroup.LayoutParams.MATCH_PARENT);
-        //左边多画两个空白的textview 右边多画两个   4个
-
-        for (int i = 0; i < itemNum + 4; i++) {
+        LL.removeAllViews();
+        for (int i = 0; i < itemNum; i++) {
             TextView itemView = new TextView(context);
-            itemView.setTextSize(itemTextSize);
+            itemView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, itemTextSize);
             itemView.setGravity(Gravity.CENTER);
             itemView.setLayoutParams(textParams);
-            if(i != 2)
-                itemView.setTextColor(getResources().getColor(R.color.gray2));
-            else{
+            if (i != 0)
+                itemView.setTextColor(getResources().getColor(R.color.gray_black));
+            else {
                 tv = itemView;
                 itemView.setTextColor(getResources().getColor(R.color.red));
             }
-
-            if (i > 1 && i < itemNum + 2) {
-                itemView.setText((i - 1) + "");
-                itemView.setBackgroundColor(itemBg);
-            }
+            itemView.setText((i + 1) + "");
+            itemView.setBackgroundColor(itemBg);
             LL.addView(itemView);
         }
 
@@ -143,6 +152,22 @@ public class ScrollCircleView extends FrameLayout {
         scrollView.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+
+                Class<?> fromClass = scrollView.getClass();
+                try {
+                    Field field = fromClass.getDeclaredField("mScroller");
+                    field.setAccessible(true);
+                    Object object = field.get(scrollView);
+                    OverScroller mScroller = (OverScroller) object;
+                    if (!mScroller.isFinished()) {
+                        //如果scrollview正在滑动，禁止触摸事件
+                        return true;
+                    }
+                } catch (NoSuchFieldException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
                 TextView tenantV = null;
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
@@ -181,14 +206,17 @@ public class ScrollCircleView extends FrameLayout {
 
                                 //设置上一个控件字体为黑色
                                 if (tv != null)
-                                    tv.setTextColor(getResources().getColor(R.color.gray2));
+                                    tv.setTextColor(getResources().getColor(R.color.gray_black));
                                 //此时的空间字体为红色
                                 //这里+2为左侧空白处为了调整添加的两个textview
-                                tv = (TextView) scrollViewLL.getChildAt(x_scrollView / itemWidth + 2);
-                                Log.d("<<", "curNum:-->>" + (x_scrollView / itemWidth + 2));
+                                tv = (TextView) scrollViewLL.getChildAt(x_scrollView / itemWidth);
+                                Log.d("<<", "curNum:-->>" + (x_scrollView / itemWidth));
                                 if (tv != null)
                                     tv.setTextColor(getResources().getColor(R.color.red));
                                 tenantNum = x_scrollView / itemWidth + 1;
+                                if (onGetTenantNumListener != null) {
+                                    onGetTenantNumListener.onGetTenantNum(tenantNum);
+                                }
                             }
 
                         }
@@ -198,6 +226,7 @@ public class ScrollCircleView extends FrameLayout {
                 return false;
             }
         });
+
     }
 
     /**
@@ -237,13 +266,15 @@ public class ScrollCircleView extends FrameLayout {
                     Log.d("<<", "x_adjust" + x_adjust);
                     scrollView.smoothScrollTo(x_adjust, 0);
                     tenantNum = (a + 1) / 2 + 1;
-
+                    if (onGetTenantNumListener != null) {
+                        onGetTenantNumListener.onGetTenantNum(tenantNum);
+                    }
 
                     if (tenantNum >= 0 && tenantNum <= itemNum) {
                         if (tv != null) {
-                            tv.setTextColor(getResources().getColor(R.color.gray2));
+                            tv.setTextColor(getResources().getColor(R.color.gray_black));
                         }
-                        tv = (TextView) scrollViewLL.getChildAt(tenantNum + 1);
+                        tv = (TextView) scrollViewLL.getChildAt(tenantNum - 1);
                         tv.setTextColor(getResources().getColor(R.color.red));
                     }
                     Log.d("<<", ">>>tenant num" + tenantNum);
@@ -255,11 +286,21 @@ public class ScrollCircleView extends FrameLayout {
 
     /**
      * 使用该view时，获取当前选中的数字
+     *
      * @return
      */
     public int getCurrentNum() {
         return tenantNum;
     }
 
+    public void setOnGetTenantNumListener(OnGetTenantNumListener onGetTenantNumListener) {
+        this.onGetTenantNumListener = onGetTenantNumListener;
+    }
+
+    OnGetTenantNumListener onGetTenantNumListener;
+
+    public interface OnGetTenantNumListener {
+        void onGetTenantNum(int selectNum);
+    }
 
 }
